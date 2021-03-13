@@ -1,64 +1,32 @@
-const fs = require('fs/promises')
-const { v4 } = require('uuid')
-const path = require('path')
-
-const contactsPath = path.join('./model/', 'contacts.json')
+const Contact = require('./schemas/contact')
 
 const listContacts = async () => {
-  const contactsList = await fs.readFile(contactsPath, 'utf8')
-  return JSON.parse(contactsList)
+  const results = await Contact.find({})
+  return results
 }
 
 const getContactById = async (contactId) => {
-  const contactsList = await fs.readFile(contactsPath, 'utf8')
-  const currentContact = JSON.parse(contactsList).find(
-    // eslint-disable-next-line eqeqeq
-    (contact) => contact.id == contactId
-  )
-  return await currentContact
+  const result = await Contact.findOne({ _id: contactId })
+  return result
 }
 
 const removeContact = async (contactId) => {
-  const contactsList = await fs.readFile(contactsPath, 'utf8')
-  const updateContacts = JSON.parse(contactsList).filter(
-    (contact) => contact.id !== contactId
-  )
-  // eslint-disable-next-line eqeqeq
-  const existContact = JSON.parse(contactsList).some(contact => contact.id == contactId)
-  fs.writeFile(contactsPath, JSON.stringify(updateContacts), 'utf8')
-  return existContact
+  const result = await Contact.findByIdAndRemove({ _id: contactId })
+  return result
 }
 
 const addContact = async (body) => {
-  const contactsList = await fs.readFile(contactsPath, 'utf8')
-  const newContact = {
-    id: v4(),
-    ...body
-  }
-  const newContacts = [
-    ...JSON.parse(contactsList),
-    newContact
-  ]
-  fs.writeFile(contactsPath, JSON.stringify(newContacts), 'utf8')
-  return newContact
+  const result = await Contact.create(body)
+  return result
 }
 
 const updateContact = async (contactId, body) => {
-  const contactsList = await fs.readFile(contactsPath, 'utf8')
-  const newContacts = JSON.parse(contactsList).map(contact => {
-    // eslint-disable-next-line eqeqeq
-    if (contact.id == contactId) {
-      contact = {
-        ...contact,
-        ...body
-      }
-    }
-    return contact
-  })
-  // eslint-disable-next-line eqeqeq
-  const upDateContact = newContacts.find(contact => contact.id == contactId)
-  fs.writeFile(contactsPath, JSON.stringify(newContacts), 'utf8')
-  return upDateContact
+  const result = await Contact.findByIdAndUpdate(
+    { _id: contactId },
+    { ...body },
+    { new: true }
+  )
+  return result
 }
 
 module.exports = {
