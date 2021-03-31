@@ -7,6 +7,9 @@ require('dotenv').config()
 const { HttpCode } = require('../helpers/constants')
 require('dotenv').config()
 const SECRET_KEY = process.env.JWT_SECRET
+
+const { nanoid } = require('nanoid')
+const EmailService = require('../services/email')
 const createFolderIsExist = require('../helpers/create-dir')
 
 const reg = async (req, res, next) => {
@@ -21,8 +24,14 @@ const reg = async (req, res, next) => {
         message: 'Email in use'
       })
     }
-
-    const newUser = await Users.create(req.body)
+    const verificationToken = nanoid()
+    const emailService = new EmailService(process.env.NODE_ENV)
+    await emailService.sendEmail(verificationToken, email)
+    const newUser = await Users.create({
+      ...req.body,
+      verify: false,
+      verificationToken
+    })
     return res.status(HttpCode.CREATED).json({
       status: 'success',
       code: HttpCode.CREATED,
@@ -43,7 +52,7 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body
     const user = await Users.findByEmail(email)
-    if (!user || !user.validPassword(password)) {
+    if (!user || !user.validPassword(password) || !user.verify) {
       return res.status(HttpCode.UNAUTHORIZED).json({
         status: 'error',
         code: HttpCode.UNAUTHORIZED,
@@ -126,5 +135,25 @@ const saveAvatarToStatic = async (req) => {
   }
   return avatarUrl
 }
-
-module.exports = { reg, login, logout, currentUser, avatars }
+const verify = async (req, res, next) => {
+  try {
+    const user = await Users.findByVerifyToken(req.params.verificationToken)
+    const verify = req.params.verify
+    if (user) {
+      await Users.updateVerifyToken(user.id, true, null)
+      return res.json({
+        status: 'success',
+        code: HttpCode.OK,
+        message: 'Verification successful!'
+      })
+    }
+    return res.status(HttpCode.NOT_FOUND).json({
+      status: 'error',
+      code: HttpCode.NOT_FOUND,
+      message: 'Email already verify'
+    })
+  } catch (e) {
+  
+  }
+}
+module.exports = { reg, login, logout, currentUser, avatars, verify }

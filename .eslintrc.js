@@ -1,12 +1,13 @@
 module.exports = {
   env: {
+    parser: '@babel/eslint-parser',
     commonjs: true,
     es2021: true,
     node: true
   },
-  extends: ['standard', 'plugin:json/recommended'],
+  extends: ['standard', 'plugin:json/recommended', 'prettier'],
   parserOptions: {
-    ecmaVersion: 12
+    ecmaVersion: 2021
   },
   rules: {
   //   'comma-dangle': 'off',
